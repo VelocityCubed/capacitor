@@ -1,5 +1,5 @@
 {
-  "name": "velocitycubed-capacitor",
+  "name": "capacitor",
   "private": true,
   "scripts": {
     "build:nativebridge": "lerna run build:nativebridge",
