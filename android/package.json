@@ -1,5 +1,5 @@
 {
-  "name": "@capacitor/android",
+  "name": "@velocitycubed-capacitor/android",
   "version": "3.0.0",
   "description": "Capacitor: Cross-platform apps with JavaScript and the web",
   "homepage": "https://capacitorjs.com",
@@ -7,10 +7,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ionic-team/capacitor.git"
+    "url": "git+https://github.com/VelocityCubed/capacitor.git"
   },
   "bugs": {
-    "url": "https://github.com/ionic-team/capacitor/issues"
+    "url": "https://github.com/VelocityCubed/capacitor/issues"
   },
   "files": [
     "capacitor/build.gradle",
