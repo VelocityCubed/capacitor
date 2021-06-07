@@ -194,7 +194,7 @@ public class Bridge {
         return app;
     }
 
-    private void loadWebView() {
+    public void loadWebView() {
         appUrlConfig = this.getServerUrl();
         String[] appAllowNavigationConfig = this.config.getAllowNavigation();
 
@@ -241,6 +241,8 @@ public class Bridge {
 
         webView.setWebChromeClient(new BridgeWebChromeClient(this));
         webView.setWebViewClient(this.webViewClient);
+
+
 
         if (!isDeployDisabled() && !isNewBinary()) {
             SharedPreferences prefs = getContext()
