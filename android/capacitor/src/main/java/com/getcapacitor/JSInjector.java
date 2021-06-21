@@ -83,29 +83,74 @@ class JSInjector {
     return new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8));
   }
 
+  private String getInjectorAfterBody() {
+
+    return "<script language=\"JavaScript\">\n" +
+      " inputs = document.getElementsByTagName('input');\n" +
+      "  for (index = 0; index < inputs.length; ++index) {\n" +
+      "   var input = inputs[index];\n" +
+      "   if (input.type === 'submit') {\n" +
+      "       input.addEventListener('click', function(e) {\n" +
+      "         var target = e.target;\n" +
+      "         target.form.setAttribute('submitter-name', target.name); \n" +
+      "         target.form.setAttribute('submitter-value', target.value); \n" +
+      "       });\n" +
+      "   }" +
+      " }"+
+      " inputs = document.getElementsByTagName('button');\n" +
+      "  for (index = 0; index < inputs.length; ++index) {\n" +
+      "   var input = inputs[index];\n" +
+      "   if (input.type === 'submit') {\n" +
+      "       input.addEventListener('click', function(e) {\n" +
+      "         var target = e.target;\n" +
+      "         target.form.setAttribute('submitter-name', target.name); \n" +
+      "         target.form.setAttribute('submitter-value', target.value); \n" +
+      "       });\n" +
+      "   }" +
+      " }"+
+      "</script>";
+    /*
+    return "<script language=\"JavaScript\">\n" +
+      " inputs = document.getElementsByTagName('input');\n" +
+      "  for (index = 0; index < inputs.length; ++index) {\n" +
+      "   var input = inputs[index];\n" +
+      "   if (input.type.toLowerCase() === 'submit') {\n" +
+      " alert (input.name); "+
+      "     input.addEventListener('click', function(e) {\n" +
+      "     var target = e.target;\n" +
+      "     target.form.setAttribute('submitter-name', target.name); \n" +
+      "     target.form.setAttribute('submitter-value', target.value); \n" +
+      "\t\t\t});\n" +
+      "\t\t}\n" +
+      "\t}\n" +
+      "</script>";*/
+  }
+
   private String getInjectorString() {
     return "<script language=\"JavaScript\">\n" +
       "    function interceptor(e) {\n" +
+      " alert('interceptor'); " +
       "        var frm = e ? e.target : this;\n" +
       "        interceptor_onsubmit(frm);\n" +
       "        frm._submit();\n" +
       "    }\n" +
       "\n" +
       "    function interceptor_onsubmit(f) {\n" +
-      "        var jsonArr = [];\n" +
+      " \n"+
+      "        var pairs = [];\n" +
       "        for (i = 0; i < f.elements.length; i++) {\n" +
       "            var parName = f.elements[i].name;\n" +
       "            var parValue = f.elements[i].value;\n" +
       "            var parType = f.elements[i].type;\n" +
-      "\n" +
-      "            jsonArr.push({\n" +
-      "                name : parName,\n" +
-      "                value : parValue,\n" +
-      "                type : parType\n" +
-      "            });\n" +
+      "            if (!parType || parType.toLowerCase() !== 'submit' )\n" +
+      "               pairs.push( encodeURIComponent( parName ) + '=' + encodeURIComponent( parValue ) ); \n"+
       "        }\n" +
+      "     pairs.push( encodeURIComponent( f.attributes['submitter-name'] === undefined ? 'submitter-name' \n" +
+      "                         : f.attributes['submitter-name'].nodeValue ) + '=' + encodeURIComponent( f.attributes['submitter-value'] === undefined ? 'submitter-value' \n" +
+      "                          : f.attributes['submitter-value'].nodeValue ) ); "   +
       "\n" +
-      "        interception.customSubmit(JSON.stringify(jsonArr),\n" +
+      "" +
+      "        interception.customSubmit(pairs.join( '&' ).replace( /%20/g, '+' ),\n" +
       "                f.attributes['method'] === undefined ? null\n" +
       "                        : f.attributes['method'].nodeValue,\n" +
       "                f.attributes['enctype'] === undefined ? null\n" +
@@ -118,8 +163,6 @@ class JSInjector {
       "    window.addEventListener('submit', function(e) {\n" +
       "        interceptor(e);\n" +
       "    }, true);\n" +
-      "\n" +
-      "\n" +
       "} \n" +
       "if (!window.oldSend) { \n" +
       "   window.oldSend = XMLHttpRequest.prototype.send; \n" +
@@ -130,16 +173,39 @@ class JSInjector {
       "</script>";
   }
 
-  public InputStream getInterceptStream(InputStream responseStream) {
+  public InputStream injectInterceptor(InputStream responseStream) {
     String js = getInjectorString();
     String html = this.readAssetStream(responseStream);
+
+
     if (html.contains("<head>")) {
       html = html.replace("<head>", "<head>\n" + js + "\n");
-    } else if (html.contains("</head>")) {
-      html = html.replace("</head>", js + "\n" + "</head>");
+    } else if (html.contains("<HEAD>")) {
+      html = html.replace("<HEAD>", "<HEAD>\n" + js + "\n");
     } else {
       Logger.error("Unable to inject interceptor");
     }
+
+   /* if (html.contains("onLoad=\"document.forms[0].submit()\">")) {
+      html = html.replace("onLoad=\"document.forms[0].submit()\">", "onLoad=\"interceptor(document.forms[0])\">");
+    }
+    */
+
+    if (html.contains("</body>")) {
+      html = html.replace("</body>", getInjectorAfterBody() + "</body>\n");
+    } else {
+      Logger.error("Unable to inject submit input interceptor");
+    }
+
+    return new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8));
+  }
+
+  public InputStream steamOutput(InputStream responseStream) {
+
+    String html = this.readAssetStream(responseStream);
+
+    Logger.error("STREAM "+html);
+
     return new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8));
   }
 

@@ -206,7 +206,7 @@ public class WebViewLocalServer {
 
   private boolean isAllowedUrl(Uri loadingUrl) {
     return true;
-   // return !(bridge.getServerUrl() == null && !bridge.getAppAllowNavigationMask().matches(loadingUrl.getHost()));
+    // return !(bridge.getServerUrl() == null && !bridge.getAppAllowNavigationMask().matches(loadingUrl.getHost()));
   }
 
   private WebResourceResponse handleLocalRequest(WebResourceRequest request, PathHandler handler) {
@@ -349,7 +349,7 @@ public class WebViewLocalServer {
     return "";
   }
 
-  private String getWebrtcExample(){
+  private String getWebrtcExample() {
     return "<!DOCTYPE html>\n" +
       "<!--\n" +
       " *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.\n" +
@@ -458,13 +458,8 @@ public class WebViewLocalServer {
     String js = "<script type=\"text/javascript\">" + jsInjector.getScriptString() + "</script>";
     String html = "<!DOCTYPE html>\n" +
       "<html>\n" +
-      "<body><head></head>\n" +
-      "\n" +
-      "<h2>Redirect to a Webpage</h2>\n" +
-      "<p>The replace() method replaces the current document with a new one:</p>\n" +
-      "\n" +
-      "<button onclick=\"myFunction()\">Replace document</button>\n" +
-      "\n" +
+      "<head></head><body>\n" +
+      "Please wait while redirecting...\n" +
       "<script type=\"text/javascript\">\n" +
       "  window.location.href = \"" + location + "\";\n" +
       "</script>\n" +
@@ -526,11 +521,7 @@ public class WebViewLocalServer {
     String url = request.getUrl().toString();
     final String method = request.getMethod();
 
-    Logger.error("handleProxyRequest: " + url);
-
-    if (url.endsWith("/cancelled?")) {
-      Logger.error("TOKEN");
-    }
+    Logger.debug("HandleProxyRequest: " + url);
 
     try {
       Map<String, String> headers = request.getRequestHeaders();
@@ -544,15 +535,11 @@ public class WebViewLocalServer {
       for (Map.Entry<String, String> header : headers.entrySet()) {
         conn.setRequestProperty(header.getKey(), header.getValue());
       }
-      conn.setInstanceFollowRedirects(true);
+
       conn.setRequestMethod(method);
       conn.setReadTimeout(30 * 1000);
       conn.setConnectTimeout(30 * 1000);
       conn.setInstanceFollowRedirects(false);
-
-   /*   if (url.contains("/confirmed?")) {
-
-      } */
 
       // COOKIES
       String getCookie = CookieManager.getInstance().getCookie(url);
@@ -563,15 +550,31 @@ public class WebViewLocalServer {
       //BODY
       if (request instanceof WebResourceRequestWithBody) {
         WebResourceRequestWithBody wwwb = ((WebResourceRequestWithBody) request);
-        PostInterceptJavascriptInterface.AjaxRequestContents content = wwwb.getInterceptor().mNextAjaxRequestContents;
-        if (!method.equals("GET") && content != null && content.body != null) {
-          Logger.error("handleProxyRequest: " + content.body);
-          conn.setDoOutput(true);
-          try (OutputStream os = conn.getOutputStream()) {
-            byte[] input = content.body.getBytes("utf-8");
-            os.write(input, 0, input.length);
+
+        if (wwwb.getInterceptor().mNextAjaxRequestContents != null) {
+          PostInterceptJavascriptInterface.AjaxRequestContents content = wwwb.getInterceptor().mNextAjaxRequestContents;
+          if (!method.equals("GET") && content != null && content.body != null) {
+            Logger.debug("HandleProxyRequest Body: " + content.body);
+            conn.setDoOutput(true);
+            try (OutputStream os = conn.getOutputStream()) {
+              byte[] input = content.body.getBytes("utf-8");
+              os.write(input, 0, input.length);
+            }
+          }
+        } else
+        if (wwwb.getInterceptor().mNextFormRequestContents != null) {
+          PostInterceptJavascriptInterface.FormRequestContents content = wwwb.getInterceptor().mNextFormRequestContents;
+          if (!method.equals("GET") && content != null && content.json != null) {
+
+            Logger.debug("HandleProxyRequest Body: " + content.json);
+            conn.setDoOutput(true);
+            try (OutputStream os = conn.getOutputStream()) {
+              byte[] input = content.json.getBytes("utf-8");
+              os.write(input, 0, input.length);
+            }
           }
         }
+
       }
 
 
@@ -595,9 +598,7 @@ public class WebViewLocalServer {
 
       InputStream responseStream = null;
       try {
-        int responseLength = conn.getContentLength();
-        if (responseLength > 0)
-          responseStream = conn.getInputStream();
+        responseStream = conn.getInputStream();
       } catch (FileNotFoundException fex) {
       }
       if (responseStream == null)
@@ -617,7 +618,8 @@ public class WebViewLocalServer {
         return getRedirectResponse(location, handler);
       }
 
-      responseStream = jsInjector.getInterceptStream(responseStream);
+      if (responseMimeType.toLowerCase().equals("text/html"))
+        responseStream = jsInjector.injectInterceptor(responseStream);
       //bridge.reset();
 
 
