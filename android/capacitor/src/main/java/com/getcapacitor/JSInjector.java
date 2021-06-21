@@ -109,27 +109,11 @@ class JSInjector {
       "   }" +
       " }"+
       "</script>";
-    /*
-    return "<script language=\"JavaScript\">\n" +
-      " inputs = document.getElementsByTagName('input');\n" +
-      "  for (index = 0; index < inputs.length; ++index) {\n" +
-      "   var input = inputs[index];\n" +
-      "   if (input.type.toLowerCase() === 'submit') {\n" +
-      " alert (input.name); "+
-      "     input.addEventListener('click', function(e) {\n" +
-      "     var target = e.target;\n" +
-      "     target.form.setAttribute('submitter-name', target.name); \n" +
-      "     target.form.setAttribute('submitter-value', target.value); \n" +
-      "\t\t\t});\n" +
-      "\t\t}\n" +
-      "\t}\n" +
-      "</script>";*/
   }
 
   private String getInjectorString() {
     return "<script language=\"JavaScript\">\n" +
       "    function interceptor(e) {\n" +
-      " alert('interceptor'); " +
       "        var frm = e ? e.target : this;\n" +
       "        interceptor_onsubmit(frm);\n" +
       "        frm._submit();\n" +
